@@ -5,6 +5,9 @@
   [![Live Demo](https://img.shields.io/badge/Live_Demo-Online-success?style=for-the-badge&logo=vercel)](https://weather-safety-advisory-bot.onrender.com/)
   [![Tech Stack](https://img.shields.io/badge/Tech-LangGraph%20%7C%20FastAPI%20%7C%20Three.js-blue?style=for-the-badge)](#)
   [![License](https://img.shields.io/badge/License-MIT-purple?style=for-the-badge)](#license)
+  
+  <br>
+  <b>🌍 Live URL:</b> <a href="https://weather-safety-advisory-bot.onrender.com/">https://weather-safety-advisory-bot.onrender.com/</a>
 </div>
 
 <br>
@@ -33,6 +36,13 @@ This isn't a simple prompt-chain. The bot uses a robust state machine (`app/grap
 4. **`match_sops`**: Evaluates the live weather against our YAML SOPs. Sorts matches by severity and selects a "Primary SOP".
 5. **`compose_reply`**: Injects the exact numerical data and the Primary SOP text into the LLM prompt.
 6. **`check_grounding_node`**: **(Feedback Loop)** Evaluates the LLM's response. Did it hallucinate? Did it cite a policy that doesn't exist? If it fails, the graph loops back to `compose_reply` to try again.
+
+---
+
+## ⚖️ Architectural Trade-Offs
+
+- **Deterministic Context vs. RAG:** Instead of using Vector/RAG embeddings (which struggle with evaluating strict numerical thresholds like "is wind speed > 40 km/h?"), I built a deterministic Python matcher. This ensures that safety-critical thresholds are never misunderstood by semantic similarity. The LLM is strictly used for language composition, not policy decision-making.
+- **Feedback Grounding Loop:** To guarantee 100% policy adherence, the graph includes a closed-loop grounding check. If the LLM generates a number not found in the live API response or invents advice, the graph catches the schema violation and retries safely before falling back to a hardcoded template.
 
 ---
 
@@ -112,6 +122,6 @@ When you ask the bot a question, click the **"◈ Why this answer"** button belo
 
 ## 👨‍💻 Author & License
 
-Built by **Shubham** as a take-home assignment for the **MediBuddy Brainwave (AI Product Engineering) Internship**.
+Built by **Shubham Ranjan** as a take-home assignment for the **MediBuddy Brainwave (AI Product Engineering) Internship**.
 
 This project is open-source and available under the **MIT License**. Feel free to explore the code, test the evals, and deploy your own version!
