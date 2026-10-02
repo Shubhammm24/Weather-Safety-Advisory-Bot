@@ -1,10 +1,13 @@
-# Weather-Advisory Support Bot
+<div align="center">
+  <h1>🌦️ Weather-Advisory Support Bot</h1>
+  <p><b>A LangGraph-backed AI assistant that answers outdoor-activity safety questions using live Open-Meteo weather data.</b></p>
 
-**🌍 Live Demo:** [https://weather-safety-advisory-bot.onrender.com/](https://weather-safety-advisory-bot.onrender.com/)
+  [![Live Demo](https://img.shields.io/badge/Live_Demo-Online-success?style=for-the-badge&logo=vercel)](https://weather-safety-advisory-bot.onrender.com/)
+  [![Tech Stack](https://img.shields.io/badge/Tech-LangGraph%20%7C%20FastAPI%20%7C%20Three.js-blue?style=for-the-badge)](#)
+  [![License](https://img.shields.io/badge/License-MIT-purple?style=for-the-badge)](#license)
+</div>
 
-**Tech Stack:** `LangGraph` • `FastAPI (Python)` • `Open-Meteo API` • `Three.js` • `Groq (Qwen)` • `Pytest`
-
-A LangGraph-backed AI assistant that answers outdoor-activity safety questions using live Open-Meteo weather data.  
+<br>
 
 **Core Principle:** This bot is strictly constrained. Every piece of advice it provides is grounded in a written Standard Operating Procedure (SOP) that we control. It does not invent generic advice, it does not hallucinate numbers, and if a scenario is not covered by an SOP, it gracefully admits it rather than guessing.
 
@@ -104,3 +107,11 @@ When you ask the bot a question, click the **"◈ Why this answer"** button belo
 - The Primary Policy invoked, including its severity level.
 - The raw weather numbers used to trigger the policy.
 - The number of grounding attempts required to generate a safe answer.
+
+---
+
+## 👨‍💻 Author & License
+
+Built by **Shubham** as a take-home assignment for the **MediBuddy Brainwave (AI Product Engineering) Internship**.
+
+This project is open-source and available under the **MIT License**. Feel free to explore the code, test the evals, and deploy your own version!
