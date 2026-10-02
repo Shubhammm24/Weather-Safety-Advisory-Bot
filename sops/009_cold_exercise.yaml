@@ -1,0 +1,24 @@
+id: SOP-009
+title: "Cold Weather Advisory for Outdoor Exercise"
+version: "1.0"
+category: exercise
+severity: low
+lead: false
+applies_to:
+  activities: ["running", "walking", "hiking", "cycling"]
+  groups: ["*"]
+match:
+  type: threshold
+  combine: all
+  conditions:
+    - metric: min_apparent_temp
+      op: "<"
+      value: 10.0
+guidance: >
+  The feels-like temperature drops to {min_apparent_temp}°C. Wear layered,
+  moisture-wicking clothing. Warm up indoors for 10 minutes before starting.
+  Cover extremities (gloves, ear cover, warm socks). Shorten your session if
+  you feel numbness or excessive shivering. Carry a warm drink for longer outings.
+rationale: >
+  Apparent temperature below 10°C increases risk of muscle strains and, in
+  prolonged exposure, hypothermia. Layered clothing is the primary mitigation.

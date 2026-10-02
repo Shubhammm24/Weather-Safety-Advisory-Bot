@@ -1,0 +1,28 @@
+id: SOP-007
+title: "Moderate Rain Advisory for Outdoor Activities"
+version: "1.0"
+category: exercise
+severity: moderate
+lead: false
+applies_to:
+  activities: ["running", "walking", "hiking", "outdoor_play"]
+  groups: ["*"]
+match:
+  type: threshold
+  combine: all
+  conditions:
+    - metric: max_precip_prob
+      op: ">="
+      value: 60
+    - metric: total_precip
+      op: ">="
+      value: 5.0
+guidance: >
+  Rain is likely ({max_precip_prob}% chance) with up to {total_precip} mm expected.
+  Surfaces will be slippery — avoid uneven trails and grassy slopes. Wear
+  water-resistant footwear with good grip. If hiking, stay away from streams that
+  may swell. Carry a waterproof bag for electronics.
+rationale: >
+  Precipitation probability ≥60% with ≥5mm total indicates sustained rain rather
+  than a brief drizzle. Wet surfaces increase fall risk for all pedestrian
+  activities.

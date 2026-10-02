@@ -1,0 +1,26 @@
+id: SOP-004
+title: "Heat Advisory for Vulnerable Groups"
+version: "1.0"
+category: vulnerable_groups
+severity: high
+lead: false
+applies_to:
+  activities: ["*"]
+  groups: ["children", "elderly"]
+match:
+  type: threshold
+  combine: all
+  conditions:
+    - metric: max_apparent_temp
+      op: ">="
+      value: 40.0
+guidance: >
+  The apparent (feels-like) temperature reaches {max_apparent_temp}°C. Children and
+  elderly individuals are at high risk of heat exhaustion and heatstroke. Keep them
+  indoors in cooled spaces. If outdoor exposure is unavoidable, limit it to under
+  15 minutes, provide frequent water breaks, and watch for signs of heat illness
+  (dizziness, nausea, rapid heartbeat).
+rationale: >
+  Apparent temperature ≥40°C is classified as "danger" by NOAA's heat index scale.
+  Children and the elderly have reduced thermoregulation capacity, making them
+  especially vulnerable.

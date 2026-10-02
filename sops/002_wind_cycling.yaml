@@ -1,0 +1,27 @@
+id: SOP-002
+title: "High Wind Advisory for Cycling and Two-Wheelers"
+version: "1.0"
+category: exercise
+severity: high
+lead: false
+applies_to:
+  activities: ["cycling", "two_wheeler"]
+  groups: ["*"]
+match:
+  type: threshold
+  combine: any
+  conditions:
+    - metric: max_wind_gust
+      op: ">="
+      value: 50.0
+    - metric: max_wind_speed
+      op: ">="
+      value: 40.0
+guidance: >
+  Wind gusts up to {max_wind_gust} km/h and sustained winds of {max_wind_speed} km/h
+  are forecast. Two-wheeled vehicles are highly unstable in these conditions. Do not
+  ride. If already on the road, pull over in a safe location away from trees and
+  signboards, and wait for conditions to improve.
+rationale: >
+  Wind gusts above 50 km/h can destabilize bicycles and two-wheelers, especially on
+  open roads and bridges. This threshold aligns with IMD's "strong wind" category.

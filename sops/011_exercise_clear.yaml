@@ -1,0 +1,39 @@
+id: SOP-011
+title: "Exercise Conditions: All Clear"
+version: "1.0"
+category: exercise
+severity: info
+lead: false
+applies_to:
+  activities: ["cycling", "two_wheeler", "running", "walking", "hiking", "outdoor_play"]
+  groups: ["*"]
+match:
+  type: threshold
+  combine: all
+  conditions:
+    - metric: max_wind_gust
+      op: "<"
+      value: 40.0
+    - metric: max_precip_prob
+      op: "<"
+      value: 30
+    - metric: max_uv
+      op: "<"
+      value: 8.0
+    - metric: max_apparent_temp
+      op: "<"
+      value: 38.0
+    - metric: min_apparent_temp
+      op: ">="
+      value: 10.0
+    - metric: has_thunderstorm
+      op: "=="
+      value: false
+guidance: >
+  Weather conditions are favorable for outdoor exercise. Temperature feels like
+  {min_apparent_temp}°C to {max_apparent_temp}°C, wind gusts up to {max_wind_gust} km/h,
+  and UV index up to {max_uv}. Stay hydrated and enjoy your activity.
+rationale: >
+  This info-level SOP matches when all risk metrics are below their respective
+  warning thresholds, providing positive confirmation that conditions are within
+  normal range.

@@ -1,0 +1,29 @@
+id: SOP-008
+title: "Road Travel Wind and Rain Advisory"
+version: "1.0"
+category: travel
+severity: moderate
+lead: false
+applies_to:
+  activities: ["travel_road"]
+  groups: ["*"]
+match:
+  type: threshold
+  combine: any
+  conditions:
+    - metric: max_wind_gust
+      op: ">="
+      value: 60.0
+    - metric: precip_sum_24h
+      op: ">="
+      value: 35.0
+guidance: >
+  Driving conditions are hazardous. Wind gusts up to {max_wind_gust} km/h can push
+  vehicles off course, especially on highways and bridges. Accumulated rainfall of
+  {precip_sum_24h} mm risks waterlogging on roads. Reduce speed, maintain larger
+  following distances, keep headlights on, and avoid flooded underpasses. Delay
+  non-essential travel.
+rationale: >
+  Wind gusts ≥60 km/h affect vehicle stability (higher threshold than two-wheelers).
+  24h rainfall ≥35mm (IMD "heavy rain" lower bound) causes road waterlogging in
+  Indian cities.

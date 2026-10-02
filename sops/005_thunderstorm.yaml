@@ -1,0 +1,26 @@
+id: SOP-005
+title: "Thunderstorm Safety Alert"
+version: "1.0"
+category: all
+severity: critical
+lead: false
+applies_to:
+  activities: ["*"]
+  groups: ["*"]
+match:
+  type: threshold
+  combine: all
+  conditions:
+    - metric: has_thunderstorm
+      op: "=="
+      value: true
+guidance: >
+  Thunderstorms with possible lightning are forecast in your area. Move indoors
+  immediately to a solid structure — avoid open fields, hilltops, isolated trees,
+  and metal structures. If driving, pull over away from trees and power lines.
+  Do not use umbrellas with metal tips. Wait at least 30 minutes after the last
+  thunder before resuming outdoor activities.
+rationale: >
+  Weather codes 95-99 indicate thunderstorms (WMO standard). Lightning is the
+  primary hazard; India records over 2,000 lightning deaths annually. Immediate
+  shelter is the only effective mitigation.

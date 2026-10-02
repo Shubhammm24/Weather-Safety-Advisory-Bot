@@ -1,0 +1,32 @@
+id: SOP-012
+title: "Road Travel Conditions: All Clear"
+version: "1.0"
+category: travel
+severity: info
+lead: false
+applies_to:
+  activities: ["travel_road"]
+  groups: ["*"]
+match:
+  type: threshold
+  combine: all
+  conditions:
+    - metric: max_wind_gust
+      op: "<"
+      value: 50.0
+    - metric: precip_sum_24h
+      op: "<"
+      value: 15.0
+    - metric: max_precip_prob
+      op: "<"
+      value: 40
+    - metric: has_thunderstorm
+      op: "=="
+      value: false
+guidance: >
+  Road conditions look favorable. Winds up to {max_wind_gust} km/h and
+  minimal rainfall ({precip_sum_24h} mm in 24h). Standard driving precautions
+  apply — keep headlights on if overcast, maintain safe speed.
+rationale: >
+  Info-level SOP providing positive confirmation when road travel conditions
+  are within normal safe ranges.

@@ -1,0 +1,28 @@
+id: SOP-001
+title: "Heavy Rainfall System Warning"
+version: "1.0"
+category: all
+severity: critical
+lead: true
+applies_to:
+  activities: ["*"]
+  groups: ["*"]
+match:
+  type: threshold
+  combine: any
+  conditions:
+    - metric: precip_sum_24h
+      op: ">="
+      value: 64.5
+    - metric: precip_sum_72h
+      op: ">="
+      value: 130.0
+guidance: >
+  Heavy rainfall is expected: {precip_sum_24h} mm in 24 hours or {precip_sum_72h} mm
+  over 72 hours. Postpone all outdoor activities. Avoid low-lying areas, waterlogged
+  roads, and areas prone to flooding. Keep emergency supplies ready. Monitor local
+  weather updates continuously.
+rationale: >
+  Based on IMD's heavy rainfall classification: ≥64.5 mm/24h is "very heavy rain",
+  ≥130 mm/72h indicates sustained heavy rainfall. These thresholds are associated with
+  urban flooding, waterlogging, and significant safety risks.

@@ -1,0 +1,24 @@
+id: SOP-003
+title: "UV Exposure Warning (Peak Hours)"
+version: "1.0"
+category: exercise
+severity: moderate
+lead: false
+applies_to:
+  activities: ["running", "walking", "hiking", "cycling", "outdoor_play"]
+  groups: ["*"]
+match:
+  type: threshold
+  combine: all
+  conditions:
+    - metric: max_uv
+      op: ">="
+      value: 6.0
+guidance: >
+  UV index reaches {max_uv} during peak hours (11 AM to 4 PM). Apply SPF 30+
+  sunscreen, wear a hat and UV-protective sunglasses. Schedule outdoor exercise
+  before 10 AM or after 4 PM to reduce exposure. Stay hydrated — UV-related
+  fatigue can lead to dehydration.
+rationale: >
+  UV index ≥6 is classified as "high" by the WHO. Prolonged exposure at this level
+  increases risk of sunburn and long-term skin damage, particularly during midday.

@@ -1,0 +1,26 @@
+id: SOP-010
+title: "Pet Safety in Extreme Heat"
+version: "1.0"
+category: vulnerable_groups
+severity: high
+lead: false
+applies_to:
+  activities: ["walking", "outdoor_play"]
+  groups: ["pets"]
+match:
+  type: threshold
+  combine: all
+  conditions:
+    - metric: max_apparent_temp
+      op: ">="
+      value: 36.0
+guidance: >
+  Ground surfaces can be dangerously hot at {max_apparent_temp}°C apparent
+  temperature. Test the pavement with the back of your hand for 5 seconds —
+  if it's too hot for you, it's too hot for paws. Walk pets only on grass or
+  in shaded areas. Limit walks to early morning or after sunset. Carry water
+  for your pet. Watch for signs of overheating: excessive panting, drooling,
+  or lethargy.
+rationale: >
+  Dogs cannot regulate body temperature as efficiently as humans. Asphalt can
+  reach 60°C+ when air temperature is above 35°C, causing paw pad burns.

@@ -1,0 +1,72 @@
+id: SOP-006
+title: "Picnic Suitability Assessment"
+version: "1.0"
+category: leisure
+severity: info
+lead: false
+applies_to:
+  activities: ["picnic"]
+  groups: ["*"]
+guidance: >
+  Picnic suitability is assessed based on multiple weather factors including
+  rain probability, temperature comfort, wind, UV index, and thunderstorm risk.
+  See the verdict below for the overall assessment.
+match:
+  type: rubric
+  criteria:
+    - metric: max_precip_prob
+      op: "<"
+      value: 20
+      points: 2
+    - metric: max_precip_prob
+      op: "<"
+      value: 40
+      points: 1
+    - metric: max_apparent_temp
+      op: between
+      value: [20.0, 32.0]
+      points: 2
+    - metric: max_wind_gust
+      op: "<"
+      value: 30.0
+      points: 1
+    - metric: max_uv
+      op: "<"
+      value: 8.0
+      points: 1
+    - metric: has_thunderstorm
+      op: "=="
+      value: false
+      points: 2
+  bands:
+    - min_points: 7
+      max_points: 9
+      verdict: "Excellent"
+      guidance: >
+        Conditions are ideal for a picnic. Low rain chance, comfortable
+        temperature, and manageable wind. Enjoy your time outdoors!
+    - min_points: 5
+      max_points: 6
+      verdict: "Fair"
+      guidance: >
+        Conditions are acceptable but not perfect. Consider bringing sun
+        protection if UV is high, or a light jacket if it's breezy. Have a
+        backup indoor option ready.
+    - min_points: 3
+      max_points: 4
+      verdict: "Poor"
+      guidance: >
+        Multiple weather factors are unfavorable. Consider postponing or
+        choosing a sheltered venue. Bring rain gear and be prepared to
+        move indoors quickly.
+    - min_points: 0
+      max_points: 2
+      verdict: "Unsuitable"
+      guidance: >
+        Weather conditions are not suitable for an outdoor picnic. Reschedule
+        or move to a fully indoor venue.
+rationale: >
+  Picnic suitability depends on multiple factors, none individually critical
+  (unlike cycling in high wind). A points-based rubric captures the combined
+  effect of rain probability, temperature comfort, wind, UV, and thunderstorm
+  risk.

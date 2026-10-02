@@ -1,0 +1,1 @@
+# Weather client sub-package

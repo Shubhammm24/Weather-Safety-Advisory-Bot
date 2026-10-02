@@ -1,0 +1,174 @@
+# Vocabulary for the Weather-Advisory Support Bot
+# This file defines all allowed values for activities, groups, time windows, and severity levels.
+# The intent extractor uses these at runtime — values are NOT hardcoded in code.
+
+activities:
+  cycling:
+    description: "Riding a bicycle"
+    examples:
+      - "go for a bike ride"
+      - "cycling to work"
+      - "bicycle ride"
+      - "pedal around"
+
+  two_wheeler:
+    description: "Riding a scooter or motorcycle"
+    examples:
+      - "take my scooty"
+      - "ride my scooter"
+      - "motorcycle ride"
+      - "commute on two-wheeler"
+      - "bike ride" # colloquial in India
+
+  running:
+    description: "Jogging or running outdoors"
+    examples:
+      - "go for a run"
+      - "morning jog"
+      - "running in the park"
+      - "sprint session"
+
+  walking:
+    description: "Walking outdoors"
+    examples:
+      - "go for a walk"
+      - "evening stroll"
+      - "walking to the market"
+      - "on foot"
+
+  hiking:
+    description: "Hiking or trekking"
+    examples:
+      - "go hiking"
+      - "trek in the hills"
+      - "mountain trail"
+      - "nature walk"
+
+  picnic:
+    description: "Outdoor picnic or meal"
+    examples:
+      - "have a picnic"
+      - "eat outdoors"
+      - "park picnic"
+      - "outdoor lunch"
+
+  outdoor_play:
+    description: "Playing outdoors, playground activities"
+    examples:
+      - "play outside"
+      - "take kids to playground"
+      - "outdoor games"
+      - "play in the park"
+      - "cricket"
+      - "football"
+
+  travel_road:
+    description: "Road travel by car or bus"
+    examples:
+      - "drive to"
+      - "road trip"
+      - "travel by car"
+      - "bus journey"
+      - "long drive"
+
+  other:
+    description: "Any other outdoor activity"
+    examples:
+      - "go outside"
+      - "outdoor event"
+      - "gardening"
+
+groups:
+  children:
+    description: "Kids under 12 years"
+    examples:
+      - "kids"
+      - "child"
+      - "my son"
+      - "my daughter"
+      - "toddler"
+      - "4 year old"
+
+  elderly:
+    description: "Adults over 60"
+    examples:
+      - "grandmother"
+      - "grandfather"
+      - "elderly parent"
+      - "senior citizen"
+      - "old parents"
+
+  pets:
+    description: "Dogs, cats, and other pets"
+    examples:
+      - "dog"
+      - "puppy"
+      - "cat"
+      - "pet"
+      - "my dog"
+
+  general:
+    description: "Healthy adults (default)"
+    examples: []
+
+time_windows:
+  now:
+    description: "Current conditions (next 1-2 hours)"
+    hours_start: null  # current hour
+    hours_end: null    # current hour + 2
+
+  morning:
+    description: "6 AM to 11 AM"
+    hours_start: 6
+    hours_end: 11
+
+  afternoon:
+    description: "12 PM to 4 PM"
+    hours_start: 12
+    hours_end: 16
+
+  evening:
+    description: "5 PM to 8 PM"
+    hours_start: 17
+    hours_end: 20
+
+  night:
+    description: "9 PM to 11 PM"
+    hours_start: 21
+    hours_end: 23
+
+  today:
+    description: "Rest of today"
+    hours_start: null  # current hour
+    hours_end: 23
+
+  tomorrow:
+    description: "6 AM to 9 PM tomorrow"
+    hours_start: 6
+    hours_end: 21
+
+severity_levels:
+  info:
+    rank: 0
+    description: "Conditions are within normal range"
+    color: "green"
+
+  low:
+    rank: 1
+    description: "Minor weather factor to be aware of"
+    color: "blue"
+
+  moderate:
+    rank: 2
+    description: "Noticeable weather impact; take precautions"
+    color: "yellow"
+
+  high:
+    rank: 3
+    description: "Significant risk; reconsider plans"
+    color: "orange"
+
+  critical:
+    rank: 4
+    description: "Dangerous conditions; avoid outdoor activity"
+    color: "red"
