@@ -1,6 +1,8 @@
 # Weather-Advisory Support Bot
 
-A LangGraph-backed AI assistant that answers outdoor-activity safety questions using live Open-Meteo weather data. 
+**🌍 Live Demo:** [https://weather-safety-advisory-bot.onrender.com/](https://weather-safety-advisory-bot.onrender.com/)
+
+A LangGraph-backed AI assistant that answers outdoor-activity safety questions using live Open-Meteo weather data.  
 
 **Core Principle:** This bot is strictly constrained. Every piece of advice it provides is grounded in a written Standard Operating Procedure (SOP) that we control. It does not invent generic advice, it does not hallucinate numbers, and if a scenario is not covered by an SOP, it gracefully admits it rather than guessing.
 
