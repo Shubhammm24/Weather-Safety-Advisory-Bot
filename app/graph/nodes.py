@@ -232,6 +232,9 @@ def no_sop_reply(state: dict) -> dict:
     intent = state.get("intent")
     location = state.get("location")
     activity = intent.activity if intent else "this activity"
+    if activity == "other":
+        activity = "this activity"
+    
     location_name = location.get("name", "your location") if location else "your location"
 
     reply = (
