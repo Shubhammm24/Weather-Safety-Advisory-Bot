@@ -2,17 +2,41 @@
 Open-Meteo weather client.
 
 Provides geocoding and forecast fetching with proper error handling,
-timeouts, and one retry on failure.
+timeouts, caching (10-minute TTL), and retries with exponential backoff.
 """
 
 from __future__ import annotations
 
+import time
+import hashlib
 import httpx
 from datetime import datetime, timezone
 from typing import Any
 
 from app import config
 from app.weather.errors import LocationNotFound, WeatherUnavailable
+
+
+# --- In-memory cache with TTL ---
+_cache: dict[str, tuple[float, Any]] = {}
+_CACHE_TTL = 600  # 10 minutes
+
+
+def _cache_get(key: str) -> Any | None:
+    """Get a value from cache if it exists and hasn't expired."""
+    if key in _cache:
+        ts, value = _cache[key]
+        if time.time() - ts < _CACHE_TTL:
+            print(f"[CACHE] Hit for {key[:40]}...")
+            return value
+        else:
+            del _cache[key]
+    return None
+
+
+def _cache_set(key: str, value: Any) -> None:
+    """Store a value in cache with current timestamp."""
+    _cache[key] = (time.time(), value)
 
 
 # --- Forecast field configuration ---
@@ -56,6 +80,11 @@ def geocode(name: str) -> dict[str, Any]:
         LocationNotFound: If no results are returned.
         WeatherUnavailable: On network/timeout/non-200 errors.
     """
+    cache_key = f"geo:{name.lower().strip()}"
+    cached = _cache_get(cache_key)
+    if cached is not None:
+        return cached
+
     url = config.GEOCODING_BASE_URL
     params = {"name": name, "count": 5, "language": "en", "format": "json"}
 
@@ -79,7 +108,7 @@ def geocode(name: str) -> dict[str, Any]:
 
             # Take the first (most relevant) result
             top = results[0]
-            return {
+            result = {
                 "name": top.get("name", name),
                 "country": top.get("country", ""),
                 "admin1": top.get("admin1", ""),
@@ -87,6 +116,8 @@ def geocode(name: str) -> dict[str, Any]:
                 "longitude": top["longitude"],
                 "timezone": top.get("timezone", "auto"),
             }
+            _cache_set(cache_key, result)
+            return result
 
         except LocationNotFound:
             raise
@@ -238,6 +269,12 @@ def fetch_forecast(
         "daily": ",".join(DAILY_FIELDS),
     }
 
+    # Round coords to 2 decimal places for cache key (same city)
+    cache_key = f"forecast:{round(latitude, 2)}:{round(longitude, 2)}"
+    cached = _cache_get(cache_key)
+    if cached is not None:
+        return cached
+
     print(f"[WEATHER] Fetching forecast for ({latitude}, {longitude}), timeout={config.HTTP_TIMEOUT}s")
 
     max_attempts = 5
@@ -282,7 +319,7 @@ def fetch_forecast(
                 )
 
             print(f"[WEATHER] Success: got current, hourly, daily data")
-            return {
+            result = {
                 "raw": data,
                 "fetched_at": datetime.now(timezone.utc).isoformat(),
                 "source_url": str(response.url),
@@ -291,6 +328,8 @@ def fetch_forecast(
                     "longitude": data.get("longitude", longitude),
                 },
             }
+            _cache_set(cache_key, result)
+            return result
 
         except WeatherUnavailable:
             raise
