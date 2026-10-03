@@ -236,13 +236,17 @@ def fetch_forecast(
         "daily": ",".join(DAILY_FIELDS),
     }
 
-    for attempt in range(2):  # one retry
+    print(f"[WEATHER] Fetching forecast for ({latitude}, {longitude}), timeout={config.HTTP_TIMEOUT}s")
+
+    for attempt in range(3):  # two retries
         try:
             with _make_client() as client:
                 response = client.get(url, params=params)
 
+            print(f"[WEATHER] Attempt {attempt+1}: status={response.status_code}")
+
             if response.status_code != 200:
-                if attempt == 0:
+                if attempt < 2:
                     continue
                 raise WeatherUnavailable(
                     f"Forecast API returned status {response.status_code}."
@@ -252,13 +256,16 @@ def fetch_forecast(
 
             # Verify expected fields are present
             if "current" not in data or "hourly" not in data or "daily" not in data:
-                if attempt == 0:
+                missing = [k for k in ["current", "hourly", "daily"] if k not in data]
+                print(f"[WEATHER] Attempt {attempt+1}: missing fields: {missing}")
+                if attempt < 2:
                     continue
                 raise WeatherUnavailable(
                     "Forecast API response missing expected fields "
                     "(current, hourly, or daily)."
                 )
 
+            print(f"[WEATHER] Success: got current, hourly, daily data")
             return {
                 "raw": data,
                 "fetched_at": datetime.now(timezone.utc).isoformat(),
@@ -272,13 +279,15 @@ def fetch_forecast(
         except WeatherUnavailable:
             raise
         except (httpx.TimeoutException, httpx.ConnectError, httpx.HTTPError) as exc:
-            if attempt == 0:
+            print(f"[WEATHER] Attempt {attempt+1} network error: {type(exc).__name__}: {exc}")
+            if attempt < 2:
                 continue
             raise WeatherUnavailable(
                 f"Forecast fetch failed after retry: {type(exc).__name__}: {exc}"
             ) from exc
         except Exception as exc:
-            if attempt == 0:
+            print(f"[WEATHER] Attempt {attempt+1} unexpected error: {type(exc).__name__}: {exc}")
+            if attempt < 2:
                 continue
             raise WeatherUnavailable(
                 f"Forecast unexpected error: {type(exc).__name__}: {exc}"
