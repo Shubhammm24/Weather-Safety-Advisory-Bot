@@ -56,6 +56,9 @@ async def chat(request: ChatRequest):
         result = run_turn(request.session_id, request.message, user_coords=user_coords)
         return ChatResponse(reply=result["reply"], trace=result["trace"])
     except Exception as exc:
+        import traceback
+        print(f"[CHAT ERROR] {type(exc).__name__}: {exc}")
+        traceback.print_exc()
         error_msg = str(exc)
         # Detect rate limit errors and return 429
         if "RESOURCE_EXHAUSTED" in error_msg or "429" in error_msg or "RateLimit" in type(exc).__name__:

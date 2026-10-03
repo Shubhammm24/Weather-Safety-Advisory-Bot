@@ -28,7 +28,7 @@ FORECAST_BASE_URL: str = os.getenv(
 )
 
 # --- Timeouts ---
-HTTP_TIMEOUT: int = int(os.getenv("HTTP_TIMEOUT", "10"))
+HTTP_TIMEOUT: int = int(os.getenv("HTTP_TIMEOUT", "30"))
 
 # --- Server ---
 HOST: str = os.getenv("HOST", "127.0.0.1")
