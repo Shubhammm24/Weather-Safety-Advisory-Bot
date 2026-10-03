@@ -225,6 +225,8 @@ def fetch_forecast(
     Raises:
         WeatherUnavailable: On network/timeout/non-200 errors.
     """
+    import time
+
     url = config.FORECAST_BASE_URL
     params = {
         "latitude": latitude,
@@ -238,15 +240,28 @@ def fetch_forecast(
 
     print(f"[WEATHER] Fetching forecast for ({latitude}, {longitude}), timeout={config.HTTP_TIMEOUT}s")
 
-    for attempt in range(3):  # two retries
+    max_attempts = 5
+    for attempt in range(max_attempts):
         try:
             with _make_client() as client:
                 response = client.get(url, params=params)
 
             print(f"[WEATHER] Attempt {attempt+1}: status={response.status_code}")
 
+            # Handle rate limiting with exponential backoff
+            if response.status_code == 429:
+                if attempt < max_attempts - 1:
+                    wait = 2 ** attempt  # 1s, 2s, 4s, 8s
+                    print(f"[WEATHER] Rate limited (429). Waiting {wait}s before retry...")
+                    time.sleep(wait)
+                    continue
+                raise WeatherUnavailable(
+                    "Open-Meteo API rate limit exceeded after all retries."
+                )
+
             if response.status_code != 200:
-                if attempt < 2:
+                if attempt < max_attempts - 1:
+                    time.sleep(1)
                     continue
                 raise WeatherUnavailable(
                     f"Forecast API returned status {response.status_code}."
@@ -258,7 +273,8 @@ def fetch_forecast(
             if "current" not in data or "hourly" not in data or "daily" not in data:
                 missing = [k for k in ["current", "hourly", "daily"] if k not in data]
                 print(f"[WEATHER] Attempt {attempt+1}: missing fields: {missing}")
-                if attempt < 2:
+                if attempt < max_attempts - 1:
+                    time.sleep(1)
                     continue
                 raise WeatherUnavailable(
                     "Forecast API response missing expected fields "
@@ -280,14 +296,16 @@ def fetch_forecast(
             raise
         except (httpx.TimeoutException, httpx.ConnectError, httpx.HTTPError) as exc:
             print(f"[WEATHER] Attempt {attempt+1} network error: {type(exc).__name__}: {exc}")
-            if attempt < 2:
+            if attempt < max_attempts - 1:
+                time.sleep(2 ** attempt)
                 continue
             raise WeatherUnavailable(
                 f"Forecast fetch failed after retry: {type(exc).__name__}: {exc}"
             ) from exc
         except Exception as exc:
             print(f"[WEATHER] Attempt {attempt+1} unexpected error: {type(exc).__name__}: {exc}")
-            if attempt < 2:
+            if attempt < max_attempts - 1:
+                time.sleep(2 ** attempt)
                 continue
             raise WeatherUnavailable(
                 f"Forecast unexpected error: {type(exc).__name__}: {exc}"
