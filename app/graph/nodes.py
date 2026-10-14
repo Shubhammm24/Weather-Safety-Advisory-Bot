@@ -149,9 +149,11 @@ def resolve_location(state: dict) -> dict:
             "error_kind": "location_not_found",
             "route": state.get("route", []) + ["resolve_location"],
         }
-    except WeatherUnavailable:
+    except WeatherUnavailable as exc:
+        print(f"[RESOLVE_LOCATION ERROR] {exc}")
         return {
             "error_kind": "weather_unavailable",
+            "error_detail": str(exc),
             "route": state.get("route", []) + ["resolve_location"],
         }
 
@@ -177,9 +179,11 @@ def fetch_weather_node(state: dict) -> dict:
             "forecast": forecast,
             "route": state.get("route", []) + ["fetch_weather"],
         }
-    except WeatherUnavailable:
+    except WeatherUnavailable as exc:
+        print(f"[FETCH_WEATHER ERROR] {exc}")
         return {
             "error_kind": "weather_unavailable",
+            "error_detail": str(exc),
             "route": state.get("route", []) + ["fetch_weather"],
         }
 

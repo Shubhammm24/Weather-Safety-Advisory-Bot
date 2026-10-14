@@ -62,8 +62,12 @@ DAILY_FIELDS = [
 
 
 def _make_client() -> httpx.Client:
-    """Create an httpx client with configured timeout."""
-    return httpx.Client(timeout=config.HTTP_TIMEOUT)
+    """Create an httpx client with configured timeout and descriptive User-Agent."""
+    headers = {
+        "User-Agent": "WeatherAdvisoryBot/1.0 (https://github.com/weather-advisor; safety-bot)",
+        "Accept": "application/json",
+    }
+    return httpx.Client(timeout=config.HTTP_TIMEOUT, headers=headers)
 
 
 def geocode(name: str) -> dict[str, Any]:
@@ -285,23 +289,25 @@ def fetch_forecast(
 
             print(f"[WEATHER] Attempt {attempt+1}: status={response.status_code}")
 
-            # Handle rate limiting with exponential backoff
-            if response.status_code == 429:
+            # Handle rate limiting and temporary service overload with exponential backoff
+            if response.status_code in (429, 503):
+                reason = "Rate limited (429)" if response.status_code == 429 else "Service overloaded (503)"
                 if attempt < max_attempts - 1:
                     wait = 2 ** attempt  # 1s, 2s, 4s, 8s
-                    print(f"[WEATHER] Rate limited (429). Waiting {wait}s before retry...")
+                    print(f"[WEATHER] {reason}. Waiting {wait}s before retry (attempt {attempt+1}/{max_attempts})...")
                     time.sleep(wait)
                     continue
                 raise WeatherUnavailable(
-                    "Open-Meteo API rate limit exceeded after all retries."
+                    f"Open-Meteo API returned status {response.status_code} ({reason}) after {max_attempts} attempts: {response.text[:200]}"
                 )
 
             if response.status_code != 200:
+                print(f"[WEATHER] Attempt {attempt+1}: unexpected status {response.status_code}: {response.text[:200]}")
                 if attempt < max_attempts - 1:
                     time.sleep(1)
                     continue
                 raise WeatherUnavailable(
-                    f"Forecast API returned status {response.status_code}."
+                    f"Forecast API returned status {response.status_code}: {response.text[:200]}"
                 )
 
             data = response.json()

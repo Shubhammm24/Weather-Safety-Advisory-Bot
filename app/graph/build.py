@@ -242,6 +242,8 @@ def run_turn(session_id: str, user_message: str, user_coords: dict = None) -> di
             weather_code = metrics["dominant_weather_code"]
 
     trace["weather_code"] = weather_code
+    if result.get("error_detail"):
+        trace["error_detail"] = result["error_detail"]
 
     # Update session facts for next turn
     _update_session_facts(session_id, result, compiled)
