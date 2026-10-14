@@ -70,6 +70,31 @@ def _make_client() -> httpx.Client:
     return httpx.Client(timeout=config.HTTP_TIMEOUT, headers=headers)
 
 
+def _fallback_geocode(name: str) -> dict[str, Any]:
+    """Fallback geocoding via OpenStreetMap Nominatim when Open-Meteo is rate-limited."""
+    try:
+        nom_url = "https://nominatim.openstreetmap.org/search"
+        nom_params = {"q": name, "format": "json", "limit": 1}
+        headers = {"User-Agent": "WeatherAdvisoryBot/1.0"}
+        with _make_client() as client:
+            resp = client.get(nom_url, params=nom_params, headers=headers)
+        if resp.status_code == 200:
+            results = resp.json()
+            if results:
+                item = results[0]
+                return {
+                    "name": item.get("name") or name,
+                    "country": item.get("display_name", "").split(",")[-1].strip(),
+                    "admin1": "",
+                    "latitude": float(item["lat"]),
+                    "longitude": float(item["lon"]),
+                    "timezone": "auto",
+                }
+    except Exception as exc:
+        print(f"[GEOCODE FALLBACK ERROR] {exc}")
+    raise LocationNotFound(name)
+
+
 def geocode(name: str) -> dict[str, Any]:
     """
     Geocode a location name using Open-Meteo's geocoding API.
@@ -98,8 +123,27 @@ def geocode(name: str) -> dict[str, Any]:
                 response = client.get(url, params=params)
 
             if response.status_code != 200:
+                if response.status_code == 429:
+                    print(f"[GEOCODE] Open-Meteo 429 rate limit. Using Nominatim fallback for '{name}'...")
+                    try:
+                        result = _fallback_geocode(name)
+                        _cache_set(cache_key, result)
+                        return result
+                    except LocationNotFound:
+                        raise
+                    except Exception:
+                        pass
                 if attempt == 0:
                     continue
+                # Try fallback on final attempt
+                try:
+                    result = _fallback_geocode(name)
+                    _cache_set(cache_key, result)
+                    return result
+                except LocationNotFound:
+                    raise
+                except Exception:
+                    pass
                 raise WeatherUnavailable(
                     f"Geocoding API returned status {response.status_code}."
                 )
@@ -128,6 +172,14 @@ def geocode(name: str) -> dict[str, Any]:
         except (httpx.TimeoutException, httpx.ConnectError, httpx.HTTPError) as exc:
             if attempt == 0:
                 continue
+            try:
+                result = _fallback_geocode(name)
+                _cache_set(cache_key, result)
+                return result
+            except LocationNotFound:
+                raise
+            except Exception:
+                pass
             raise WeatherUnavailable(
                 f"Geocoding failed after retry: {type(exc).__name__}: {exc}"
             ) from exc
@@ -239,11 +291,103 @@ def reverse_geocode(latitude: float, longitude: float) -> dict[str, Any]:
     raise WeatherUnavailable("Reverse geocoding failed after all retries.")
 
 
+def _fetch_fallback_forecast(
+    latitude: float, longitude: float, forecast_days: int = 3
+) -> dict[str, Any]:
+    """
+    Fallback weather fetcher when Open-Meteo is rate-limited on shared cloud IPs (e.g. Render).
+    Fetches from wttr.in and adapts the payload to match Open-Meteo's schema.
+    """
+    print(f"[WEATHER FALLBACK] Fetching fallback forecast for ({latitude}, {longitude})...")
+    url = f"https://wttr.in/{latitude:.4f},{longitude:.4f}?format=j1"
+    with _make_client() as client:
+        resp = client.get(url)
+    if resp.status_code != 200:
+        raise WeatherUnavailable(f"Fallback weather provider returned status {resp.status_code}")
+
+    d = resp.json()
+    hourly_times = []
+    temp = []
+    app_temp = []
+    precip = []
+    precip_prob = []
+    wind = []
+    gust = []
+    uv = []
+    code = []
+
+    for day in d.get("weather", []):
+        date_str = day.get("date", "")
+        for h in day.get("hourly", []):
+            hour_int = int(h.get("time", 0)) // 100
+            time_iso = f"{date_str}T{hour_int:02d}:00"
+            hourly_times.append(time_iso)
+            temp.append(float(h.get("tempC", 0)))
+            app_temp.append(float(h.get("FeelsLikeC", 0)))
+            precip.append(float(h.get("precipMM", 0)))
+            precip_prob.append(float(h.get("chanceofrain", 0)))
+            wind.append(float(h.get("windspeedKmph", 0)))
+            gust.append(float(h.get("WindGustKmph", 0)))
+            uv.append(float(h.get("uvIndex", 0)))
+            code.append(int(h.get("weatherCode", 0)))
+
+    curr = d.get("current_condition", [{}])[0]
+    raw = {
+        "latitude": latitude,
+        "longitude": longitude,
+        "current": {
+            "temperature_2m": float(curr.get("temp_C", 0)),
+            "apparent_temperature": float(curr.get("FeelsLikeC", 0)),
+            "precipitation": float(curr.get("precipMM", 0)),
+            "precipitation_probability": float(
+                d.get("weather", [{}])[0].get("hourly", [{}])[0].get("chanceofrain", 0)
+            ),
+            "wind_speed_10m": float(curr.get("windspeedKmph", 0)),
+            "wind_gusts_10m": float(
+                d.get("weather", [{}])[0].get("hourly", [{}])[0].get("WindGustKmph", 0)
+            ),
+            "uv_index": float(curr.get("uvIndex", 0)),
+            "weather_code": int(curr.get("weatherCode", 0)),
+        },
+        "hourly": {
+            "time": hourly_times,
+            "temperature_2m": temp,
+            "apparent_temperature": app_temp,
+            "precipitation": precip,
+            "precipitation_probability": precip_prob,
+            "wind_speed_10m": wind,
+            "wind_gusts_10m": gust,
+            "uv_index": uv,
+            "weather_code": code,
+        },
+        "daily": {
+            "precipitation_sum": [
+                float(w.get("hourly", [{}])[0].get("precipMM", 0))
+                for w in d.get("weather", [])
+            ],
+            "wind_gusts_10m_max": [
+                float(w.get("hourly", [{}])[0].get("WindGustKmph", 0))
+                for w in d.get("weather", [])
+            ],
+            "uv_index_max": [float(w.get("uvIndex", 0)) for w in d.get("weather", [])],
+        },
+    }
+    return {
+        "raw": raw,
+        "fetched_at": datetime.now(timezone.utc).isoformat(),
+        "source_url": url,
+        "location": {
+            "latitude": latitude,
+            "longitude": longitude,
+        },
+    }
+
+
 def fetch_forecast(
     latitude: float, longitude: float, forecast_days: int = 3
 ) -> dict[str, Any]:
     """
-    Fetch weather forecast from Open-Meteo.
+    Fetch weather forecast from Open-Meteo with automatic fallback.
 
     Args:
         latitude: Location latitude.
@@ -258,10 +402,8 @@ def fetch_forecast(
             - location: {latitude, longitude} as resolved by the API.
 
     Raises:
-        WeatherUnavailable: On network/timeout/non-200 errors.
+        WeatherUnavailable: On network/timeout/non-200 errors if fallback also fails.
     """
-    import time
-
     url = config.FORECAST_BASE_URL
     params = {
         "latitude": latitude,
@@ -289,23 +431,42 @@ def fetch_forecast(
 
             print(f"[WEATHER] Attempt {attempt+1}: status={response.status_code}")
 
-            # Handle rate limiting and temporary service overload with exponential backoff
+            # Handle rate limiting and temporary service overload with exponential backoff & fallback
             if response.status_code in (429, 503):
+                err_text = response.text
                 reason = "Rate limited (429)" if response.status_code == 429 else "Service overloaded (503)"
-                if attempt < max_attempts - 1:
-                    wait = 2 ** attempt  # 1s, 2s, 4s, 8s
-                    print(f"[WEATHER] {reason}. Waiting {wait}s before retry (attempt {attempt+1}/{max_attempts})...")
-                    time.sleep(wait)
-                    continue
-                raise WeatherUnavailable(
-                    f"Open-Meteo API returned status {response.status_code} ({reason}) after {max_attempts} attempts: {response.text[:200]}"
-                )
+                print(f"[WEATHER] {reason}: {err_text[:120]}")
+
+                # If Open-Meteo daily limit is exceeded or retries are exhausted, activate fallback
+                if "Daily API request limit exceeded" in err_text or attempt == max_attempts - 1:
+                    print(f"[WEATHER] Daily limit hit or retries exhausted. Activating fallback weather provider...")
+                    try:
+                        fallback_result = _fetch_fallback_forecast(latitude, longitude, forecast_days)
+                        _cache_set(cache_key, fallback_result)
+                        return fallback_result
+                    except Exception as fb_exc:
+                        print(f"[WEATHER] Fallback failed: {fb_exc}")
+                        raise WeatherUnavailable(
+                            f"Open-Meteo returned status {response.status_code} and fallback failed: {fb_exc}"
+                        )
+
+                wait = 2 ** attempt  # 1s, 2s, 4s, 8s
+                print(f"[WEATHER] Waiting {wait}s before retry (attempt {attempt+1}/{max_attempts})...")
+                time.sleep(wait)
+                continue
 
             if response.status_code != 200:
                 print(f"[WEATHER] Attempt {attempt+1}: unexpected status {response.status_code}: {response.text[:200]}")
                 if attempt < max_attempts - 1:
                     time.sleep(1)
                     continue
+                # Try fallback on final attempt
+                try:
+                    fallback_result = _fetch_fallback_forecast(latitude, longitude, forecast_days)
+                    _cache_set(cache_key, fallback_result)
+                    return fallback_result
+                except Exception:
+                    pass
                 raise WeatherUnavailable(
                     f"Forecast API returned status {response.status_code}: {response.text[:200]}"
                 )
@@ -319,12 +480,17 @@ def fetch_forecast(
                 if attempt < max_attempts - 1:
                     time.sleep(1)
                     continue
+                try:
+                    fallback_result = _fetch_fallback_forecast(latitude, longitude, forecast_days)
+                    _cache_set(cache_key, fallback_result)
+                    return fallback_result
+                except Exception:
+                    pass
                 raise WeatherUnavailable(
-                    "Forecast API response missing expected fields "
-                    "(current, hourly, or daily)."
+                    "Forecast API response missing expected fields (current, hourly, or daily)."
                 )
 
-            print(f"[WEATHER] Success: got current, hourly, daily data")
+            print(f"[WEATHER] Success: got current, hourly, daily data from Open-Meteo")
             result = {
                 "raw": data,
                 "fetched_at": datetime.now(timezone.utc).isoformat(),
@@ -344,16 +510,33 @@ def fetch_forecast(
             if attempt < max_attempts - 1:
                 time.sleep(2 ** attempt)
                 continue
-            raise WeatherUnavailable(
-                f"Forecast fetch failed after retry: {type(exc).__name__}: {exc}"
-            ) from exc
+            try:
+                print(f"[WEATHER] Activating fallback weather provider due to network errors...")
+                fallback_result = _fetch_fallback_forecast(latitude, longitude, forecast_days)
+                _cache_set(cache_key, fallback_result)
+                return fallback_result
+            except Exception:
+                raise WeatherUnavailable(
+                    f"Forecast fetch failed after retry: {type(exc).__name__}: {exc}"
+                ) from exc
         except Exception as exc:
             print(f"[WEATHER] Attempt {attempt+1} unexpected error: {type(exc).__name__}: {exc}")
             if attempt < max_attempts - 1:
                 time.sleep(2 ** attempt)
                 continue
-            raise WeatherUnavailable(
-                f"Forecast unexpected error: {type(exc).__name__}: {exc}"
-            ) from exc
+            try:
+                fallback_result = _fetch_fallback_forecast(latitude, longitude, forecast_days)
+                _cache_set(cache_key, fallback_result)
+                return fallback_result
+            except Exception:
+                raise WeatherUnavailable(
+                    f"Forecast unexpected error: {type(exc).__name__}: {exc}"
+                ) from exc
 
-    raise WeatherUnavailable("Forecast fetch failed after all retries.")
+    # Final fallback attempt before failing
+    try:
+        fallback_result = _fetch_fallback_forecast(latitude, longitude, forecast_days)
+        _cache_set(cache_key, fallback_result)
+        return fallback_result
+    except Exception:
+        raise WeatherUnavailable("Forecast fetch failed after all retries and fallback failed.")
